@@ -24,7 +24,7 @@ docker-compose up
 ```
 The command above will create a mysql container and execute the init script that will do the following tasks:
 * create a table with 11 partitions by `year`
-* create and execute a procedure to insert 4M random data on the partitioned table. _The execution of this procedure can take time, adjust the amount of data you want to start with._
+* create and execute a procedure to insert 4M random data on the partitioned table. _The execution of this procedure can take time (4 hours on my laptop), adjust the amount of data you want to start with._
 * create a non-partitioned table and copy all data from the previous one.   
 
 ---
