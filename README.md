@@ -19,9 +19,21 @@ The best definition found on my researches were those below:
 
 ---
 ## Setup the environment
+Start up stack
 ```bash
 docker-compose up
 ```
+
+Stop stack
+```bash
+docker-compose stop
+```
+
+Clean up stack
+```bash
+docker-compose down
+```
+
 The command above will create a mysql container and execute the init script that will do the following tasks:
 * create a table with 11 partitions by `year`
 * create and execute a procedure to insert 4M random data on the partitioned table. _The execution of this procedure can take time (4 hours on my laptop), adjust the amount of data you want to start with._
@@ -29,8 +41,24 @@ The command above will create a mysql container and execute the init script that
 
 ---
 ## Running the tests and check the results
+The statements were execute three times to avoid cache divergencies.
 
 ### SELECT statements
+```sql
+-- partitoned
+SELECT COUNT(*) 
+  FROM foo_part 
+```
+
+Output:
+```
+count(*) |
+---------+
+  4000000|
+
+Tooks: 1.4s, 579ms, 558ms
+```
+
 ```sql
 -- partitoned
 SELECT COUNT(*) 
@@ -42,29 +70,45 @@ Output:
 ```
 count(*)|
 --------+
-  481549|
+  397582|
 
-Tooks 280ms  
+Tooks 3.86s, 243ms, 240ms
 ```
 
 Let's run the `EXPLAIN` to see what MySQL does: 
 ```sql
 -- explain
 EXPLAIN SELECT COUNT(*)
-		  FROM foo_part 
-		 WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31'
+          FROM foo_part 
+         WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31'
 ```
 
 Output:
 ```
 id|select_type|table   |partitions|type|possible_keys|key|key_len|ref|rows  |filtered|Extra      |
 --+-----------+--------+----------+----+-------------+---+-------+---+------+--------+-----------+
- 1|SIMPLE     |foo_part|p1        |ALL |             |   |       |   |482290|   11.11|Using where|
+ 1|SIMPLE     |foo_part|p1        |ALL |             |   |       |   |370188|   11.11|Using where|
 ```
-**NOTE:** the command _explain_ shows that MySQL runs only against the partition 1 (p1) that contains arround _400k_ rows only.
+**NOTE:** the command _explain_ shows that MySQL runs only against the partition 1 (p1)
 
 
-Now let's see the result when execute the same query against a table without partitioning
+### Now let's see the result when execute the same query against a table without partitioning
+
+```sql
+-- non-partitoned
+SELECT COUNT(*) 
+  FROM foo_non_part 
+```
+
+Output:
+```
+count(*) |
+---------+
+  4000000|
+
+Tooks: 1.4s, 404ms, 408ms
+```
+
 ```sql
 -- non-partitioned		 
 SELECT COUNT(*) 
@@ -76,9 +120,9 @@ Output:
 ```
 count(*)|
 --------+
-  481549|
+  397582|
 
-Tooks: 38s
+Tooks: 26.5s, 26.5s, 26.5s
 ```
 
 Let's run the `EXPLAIN` again
@@ -93,9 +137,9 @@ Output:
 ````
 id|select_type|table       |partitions|type|possible_keys|key|key_len|ref|rows   |filtered|Extra      |
 --+-----------+------------+----------+----+-------------+---+-------+---+-------+--------+-----------+
- 1|SIMPLE     |foo_non_part|          |ALL |             |   |       |   |4827643|   11.11|Using where|
+ 1|SIMPLE     |foo_non_part|          |ALL |             |   |       |   |3985803|   11.11|Using where|
 ````
-**Note:** explain shows that MySQL runs against the single partition that contains all rows *4827643*
+**Note:** explain shows that MySQL runs a full table scan.
 
 
 We can get more information about an specific database (schema) partitions running the command below:
@@ -137,25 +181,28 @@ CREATE INDEX idx_name_fulltext ON foo_non_part (name)
 ### INSERT statement
 ```sql
 -- PARTITIONED
-insert into foo_part values (10000001,'inserting outro','1998-01-01');
---Tooks: 10ms
+insert into foo_part values (10000001,'inserting one','1998-01-01');
+--Tooks: 10ms, 9ms, 11ms
 ```
 ```sql
 -- NON PARTITIONED
-insert into foo_non_part(id,name,created) values (10000001,'inserting outro','1998-01-01');
--- Tooks: 10ms
-````
+insert into foo_non_part(id,name,created) values (10000001,'inserting one','1998-01-01');
+-- Tooks: 10ms, 8ms, 9ms
+```
+
 ### DELETE statement
 ```sql
 -- PARTITIONED
 DELETE FROM foo_part WHERE created = DATE '1995-12-31'
 -- 1328 row(s) updated 0 - 524ms
 ```	
+
 ```sql
 -- NON-PARTITIONED
 DELETE FROM foo_non_part WHERE created = DATE '1995-12-31'
 -- 1328 row(s) updated 0 - 40s
 ```
+*Note:* Using partitions we also have optiont o delete the entire partition and its data instantly without blocks.
 
 ### Modifying Partitions
 
@@ -195,7 +242,11 @@ There are a lot of options we can use partitioning with a replication environmen
 Source: https://www.slideshare.net/datacharmer/partitions-performance-with-mysql-51-and-55
 
 ## Wrapping-up
-There are many options to perform the maintanance of partitions in mysql see [link here]
+There are many options to perform the managment of partitions in mysql see [check here](https://dev.mysql.com/doc/mysql-partitioning-excerpt/8.0/en/partitioning-management.html).
+
+If the partition key is well defined, we can reduce drastically the amount of data to filter and it means less disc access, more efficient usage of cache and so on.
+
+With physical partition will be hard to rebalance or merge again, with logical partitioning we can balance easily.
 
 ### References
 
