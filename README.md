@@ -129,8 +129,8 @@ Let's run the `EXPLAIN` again
 ```sql
 -- explain
 EXPLAIN SELECT COUNT(*)
-		  FROM foo_non_part 
-		 WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31'
+          FROM foo_non_part 
+         WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31'
 ```
 
 Output:
@@ -267,5 +267,6 @@ With physical partition will be hard to rebalance or merge again, with logical p
 
 * https://dev.mysql.com/doc/refman/8.0/en/partitioning.html
 * https://dev.mysql.com/doc/refman/8.0/en/partitioning-maintenance.html
+* https://dev.mysql.com/doc/refman/5.7/en/explain-output.html
 * https://www.slideshare.net/datacharmer/partitions-performance-with-mysql-51-and-55
 * https://www.youtube.com/watch?v=FYDIgDAHVCY
