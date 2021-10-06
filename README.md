@@ -185,9 +185,24 @@ insert into foo_part values (10000001,'inserting one','1998-01-01');
 --Tooks: 10ms, 9ms, 11ms
 ```
 ```sql
--- NON PARTITIONED
+-- NON-PARTITIONED
 insert into foo_non_part(id,name,created) values (10000001,'inserting one','1998-01-01');
 -- Tooks: 10ms, 8ms, 9ms
+```
+
+### UPDATE statement
+  ```sql
+-- PARTITIONED
+UPDATE foo_part SET name=CONCAT(name," - ", YEAR(created)) 
+ WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31';
+ -- 397582 row(s) updated - 27s
+```
+
+ ```sql
+-- NON-PARTITIONED
+UPDATE foo_non_part SET name=CONCAT(name," - ", YEAR(created)) 
+ WHERE created > DATE '1995-01-01' AND created < DATE '1995-12-31';
+ -- 397582 row(s) updated - 52s
 ```
 
 ### DELETE statement
